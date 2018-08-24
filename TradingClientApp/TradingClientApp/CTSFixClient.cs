@@ -8,93 +8,125 @@ using System.Threading.Tasks;
 using QuickFix;
 using QuickFix.Fields;
 using QuickFix.Transport;
+using TradingClientApp.Model;
 
 namespace TradingClientApp
 {
-    public class CTSFixClient : QuickFix.IApplication
-    {
+	public class CTSFixClient : MessageCracker, QuickFix.IApplication
+	{
 
-        IInitiator initiator;
+		IInitiator initiator;
+		SessionID _currentSessionId;
 
-        public event Action<string> OnProgress;
-        /// <summary>
-        /// InitializSession
-        /// </summary>
-        public Task Initialize(Action<string> progress,CancellationToken cancellationToken)
-        {
-            return Task.Run(() =>
+		public List<Security> Securities { get; private set; }
 
-            {
-                var settings = new SessionSettings("cts.cfg");
+		public event Action<string> OnProgress;
+		/// <summary>
+		/// InitializSession
+		/// </summary>
+		public Task Initialize(Action<string> progress, CancellationToken cancellationToken)
+		{
+			return Task.Run(() =>
 
-                IMessageStoreFactory messageFactory = new FileStoreFactory(settings);
+			{
+				var settings = new SessionSettings("cts.cfg");
 
-                ILogFactory logFactory = new FileLogFactory(settings);
+				IMessageStoreFactory messageFactory = new FileStoreFactory(settings);
 
-                initiator = new SocketInitiator(this, messageFactory, settings);
+				ILogFactory logFactory = new FileLogFactory(settings);
 
-                progress("Initialization done");
+				initiator = new SocketInitiator(this, messageFactory, settings);
 
-            }, cancellationToken);
-        }
+				progress("Initialization done");
 
-        public void Connect()
-        {
-            initiator.Start();
-        }
+			}, cancellationToken);
+		}
 
+		public void Connect()
+		{
+			initiator.Start();
+		}
 
-        public void Disconnect()
-        {
-            initiator.Stop();
-        }
+		public void Disconnect()
+		{
+			initiator.Stop();
+		}
 
-        public void FromAdmin(Message message, SessionID sessionID)
-        {
-            if (message is QuickFix.FIX42.Heartbeat)
-            {
-                OnProgress("Heartbeat");
-            }
-        }
+		public void FromAdmin(Message message, SessionID sessionID)
+		{
+			if (message is QuickFix.FIX42.Heartbeat)
+			{
+				OnProgress("Heartbeat");
+			}
+		}
 
-        public void FromApp(Message message, SessionID sessionID)
-        {
-            throw new NotImplementedException();
-        }
+		public void FromApp(Message message, SessionID sessionID)
+		{
+			//All Incoming Applications message trigger here
+			Crack(message, sessionID);
+		}
 
-        public void OnCreate(SessionID sessionID)
-        {
-            OnProgress("Session created");
-        }
+		public void OnCreate(SessionID sessionID)
+		{
+			OnProgress("Session created");
+		}
 
-        //if logon is successful
-        public void OnLogon(SessionID sessionID)
-        {
-            OnProgress("Connection is successful");
-           // throw new NotImplementedException();
-        }
+		//if logon is successful
+		public void OnLogon(SessionID sessionID)
+		{
+			_currentSessionId = sessionID;
+			OnProgress("Connection is successful");
+			// throw new NotImplementedException();
+		}
 
-        //if logon is failed
-        public void OnLogout(SessionID sessionID)
-        {
-            OnProgress("Connection is loggedout");
-        }
+		//if logon is failed
+		public void OnLogout(SessionID sessionID)
+		{
+			OnProgress("Connection is loggedout");
+		}
 
-        //hook admin messages before calling server
-        public void ToAdmin(Message message, SessionID sessionID)
-        {
-            if(message is QuickFix.FIX42.Logon)
-            {
-                var logon = message as QuickFix.FIX42.Logon;
-                logon.SetField(new StringField(553, "FIXAGUS")); //username
-                logon.SetField(new StringField(554, "QWER1234")); //username
+		//hook admin messages before calling server
+		public void ToAdmin(Message message, SessionID sessionID)
+		{
+			if (message is QuickFix.FIX42.Logon)
+			{
+				var logon = message as QuickFix.FIX42.Logon;
+				logon.SetField(new StringField(553, "FIXAGUS")); //username
+				logon.SetField(new StringField(554, "QWER1234")); //username
 
-            }
-        }
+			}
+		}
 
-        public void ToApp(Message message, SessionID sessionId)
-        {
-          //  throw new NotImplementedException();
-        }
-    }
+		public void ToApp(Message message, SessionID sessionId)
+		{
+			//  throw new NotImplementedException();
+		}
+
+		//Send Security Definitions Request
+		public Task SendSecurityDefinitionRequest(Action<string> progressHandler)
+		{
+			return Task.Run(() =>
+			{
+				//Create object of Security Definition
+				QuickFix.FIX42.SecurityDefinitionRequest securityDefinition = new QuickFix.FIX42.SecurityDefinitionRequest();
+				securityDefinition.SecurityReqID = new SecurityReqID(Guid.NewGuid().ToString());
+				securityDefinition.SecurityRequestType = new SecurityRequestType(SecurityListRequestType.TRADINGSESSIONID);
+				Session.SendToTarget(securityDefinition, _currentSessionId);
+				progressHandler("Sent Security Definition Request");
+			});
+		}
+
+		///Response to Security Defintion will be triggered here
+		public void OnMessage(QuickFix.FIX42.SecurityDefinition securityDefinition, SessionID session)
+		{
+			//Store Security Definitions
+			Securities = new List<Security>();
+
+			//Number of securities in one message
+			int numOfSecurities = securityDefinition.TotalNumSecurities.getValue();
+			var group = new QuickFix.FIX42.SecurityDefinition();
+			
+
+		}
+	}
 }
