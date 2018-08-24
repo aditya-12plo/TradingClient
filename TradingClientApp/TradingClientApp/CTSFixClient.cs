@@ -35,7 +35,7 @@ namespace TradingClientApp
 
 				ILogFactory logFactory = new FileLogFactory(settings);
 
-				initiator = new SocketInitiator(this, messageFactory, settings);
+				initiator = new SocketInitiator(this, messageFactory, settings,logFactory);
 
 				progress("Initialization done");
 
@@ -110,7 +110,7 @@ namespace TradingClientApp
 				//Create object of Security Definition
 				QuickFix.FIX42.SecurityDefinitionRequest securityDefinition = new QuickFix.FIX42.SecurityDefinitionRequest();
 				securityDefinition.SecurityReqID = new SecurityReqID(Guid.NewGuid().ToString());
-				securityDefinition.SecurityRequestType = new SecurityRequestType(SecurityListRequestType.TRADINGSESSIONID);
+				securityDefinition.SecurityRequestType = new SecurityRequestType(SecurityListRequestType.SYMBOL);
 				Session.SendToTarget(securityDefinition, _currentSessionId);
 				progressHandler("Sent Security Definition Request");
 			});
