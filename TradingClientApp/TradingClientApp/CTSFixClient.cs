@@ -17,8 +17,9 @@ namespace TradingClientApp
 
 		IInitiator initiator;
 		SessionID _currentSessionId;
+        SessionID _markedDataSession;
 
-		public List<Security> Securities { get; private set; }
+        public List<Security> Securities { get; private set; }
 
 		public event Action<string> OnProgress;
 		/// <summary>
@@ -92,10 +93,11 @@ namespace TradingClientApp
 			{
 				var logon = message as QuickFix.FIX42.Logon;
 				logon.SetField(new StringField(553, "FIXAGUS")); //username
-				logon.SetField(new StringField(554, "QWER1234")); //username
+                logon.SetField(new StringField(554, "QWER1234")); //username
+               /// logon.SetField(new StringField(554, "QWER1234")); //username
 
-			}
-		}
+            }
+        }
 
 		public void ToApp(Message message, SessionID sessionId)
 		{
@@ -110,7 +112,8 @@ namespace TradingClientApp
 				//Create object of Security Definition
 				QuickFix.FIX42.SecurityDefinitionRequest securityDefinition = new QuickFix.FIX42.SecurityDefinitionRequest();
 				securityDefinition.SecurityReqID = new SecurityReqID(Guid.NewGuid().ToString());
-				securityDefinition.SecurityRequestType = new SecurityRequestType(SecurityListRequestType.SYMBOL);
+				securityDefinition.SecurityRequestType = new SecurityRequestType(3);
+                 // securityDefinition.Symbol = new Symbol("N/A");
 				Session.SendToTarget(securityDefinition, _currentSessionId);
 				progressHandler("Sent Security Definition Request");
 			});
