@@ -35,7 +35,7 @@ namespace TradingClientApp
 
 				ILogFactory logFactory = new FileLogFactory(settings);
 
-				initiator = new SocketInitiator(this, messageFactory, settings,logFactory);
+				initiator = new SocketInitiator(this, messageFactory, settings, logFactory);
 
 				progress("Initialization done");
 
@@ -109,24 +109,74 @@ namespace TradingClientApp
 			{
 				//Create object of Security Definition
 				QuickFix.FIX42.SecurityDefinitionRequest securityDefinition = new QuickFix.FIX42.SecurityDefinitionRequest();
-				securityDefinition.SecurityReqID = new SecurityReqID(Guid.NewGuid().ToString());
-				securityDefinition.SecurityRequestType = new SecurityRequestType(SecurityListRequestType.SYMBOL);
+				securityDefinition.SecurityReqID = new SecurityReqID("1");
+				securityDefinition.SecurityRequestType = new SecurityRequestType(SecurityListRequestType.TRADINGSESSIONID);
 				Session.SendToTarget(securityDefinition, _currentSessionId);
 				progressHandler("Sent Security Definition Request");
 			});
 		}
 
+		public Task SendMarketDataRequest(Action<string> progressHandler)
+		{
+			return Task.Run(() =>
+			{
+				//Create object of Security Definition
+				QuickFix.FIX42.MarketDataRequest securityDefinition = new QuickFix.FIX42.MarketDataRequest
+				{
+					MDReqID = new MDReqID(Guid.NewGuid().ToString()),
+					SubscriptionRequestType = new SubscriptionRequestType(SubscriptionRequestType.SNAPSHOT_PLUS_UPDATES),
+					MarketDepth = new MarketDepth(1)
+				};
+
+				var noMDEntryTypes = new QuickFix.FIX42.MarketDataRequest.NoMDEntryTypesGroup();
+				var mdEntryType_bid = new MDEntryType(MDEntryType.BID);
+				noMDEntryTypes.Set(mdEntryType_bid);
+				securityDefinition.AddGroup(noMDEntryTypes);
+				noMDEntryTypes.Set(new MDEntryType(MDEntryType.OFFER)); securityDefinition.AddGroup(noMDEntryTypes);
+				noMDEntryTypes.Set(new MDEntryType(MDEntryType.TRADE)); securityDefinition.AddGroup(noMDEntryTypes);
+				noMDEntryTypes.Set(new MDEntryType(MDEntryType.OPENING_PRICE)); securityDefinition.AddGroup(noMDEntryTypes);
+				noMDEntryTypes.Set(new MDEntryType(MDEntryType.SETTLEMENT_PRICE)); securityDefinition.AddGroup(noMDEntryTypes);
+				noMDEntryTypes.Set(new MDEntryType(MDEntryType.TRADING_SESSION_HIGH_PRICE)); securityDefinition.AddGroup(noMDEntryTypes);
+				noMDEntryTypes.Set(new MDEntryType(MDEntryType.TRADING_SESSION_LOW_PRICE)); securityDefinition.AddGroup(noMDEntryTypes);
+				noMDEntryTypes.Set(new MDEntryType(MDEntryType.TRADE_VOLUME)); securityDefinition.AddGroup(noMDEntryTypes);
+				noMDEntryTypes.Set(new MDEntryType(MDEntryType.OPEN_INTEREST)); securityDefinition.AddGroup(noMDEntryTypes);
+
+				securityDefinition.NoRelatedSym = new NoRelatedSym(1);
+
+				var relatedSymbol = new QuickFix.FIX42.MarketDataRequest.NoRelatedSymGroup();
+				relatedSymbol.Set(new Symbol("IF1509"));
+				relatedSymbol.Set(new SecurityExchange("CFFEX"));
+				securityDefinition.AddGroup(relatedSymbol);
+				Session.SendToTarget(securityDefinition, _currentSessionId);
+				progressHandler("Sent MarketData Request");
+			});
+		}
+
+		public void OnMessage(QuickFix.FIX42.MarketDataRequestReject marketDataSnapshot, SessionID session)
+		{
+			Debug.WriteLine(marketDataSnapshot.ToString());
+		}
+
+		public void OnMessage(QuickFix.FIX42.MarketDataSnapshotFullRefresh marketDataSnapshot, SessionID session)
+		{
+			Debug.WriteLine(marketDataSnapshot.ToString());
+		}
+		public void OnMessage(QuickFix.FIX42.MarketDataIncrementalRefresh marketDataSnapshot, SessionID session)
+		{
+
+		}
 		///Response to Security Defintion will be triggered here
 		public void OnMessage(QuickFix.FIX42.SecurityDefinition securityDefinition, SessionID session)
 		{
 			//Store Security Definitions
 			Securities = new List<Security>();
-
 			//Number of securities in one message
 			int numOfSecurities = securityDefinition.TotalNumSecurities.getValue();
 			var group = new QuickFix.FIX42.SecurityDefinition();
-			
+
 
 		}
+
+
 	}
 }

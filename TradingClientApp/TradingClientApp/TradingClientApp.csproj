@@ -71,6 +71,7 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <None Include="CTS FIX4.2 Spec 2018.pdf" />
     <None Include="cts.cfg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
