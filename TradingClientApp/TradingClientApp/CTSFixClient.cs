@@ -12,103 +12,107 @@ using TradingClientApp.Model;
 
 namespace TradingClientApp
 {
-    public class CTSFixClient : MessageCracker, QuickFix.IApplication
-    {
+	public class CTSFixClient : MessageCracker, QuickFix.IApplication
+	{
 
-        IInitiator initiator;
-        SessionID _currentSessionId;
-        SessionID _markedDataSession;
+		IInitiator initiator;
+		SessionID _currentSessionId;
+		SessionID _markedDataSession;
 
-        public List<Security> Securities { get; private set; }
+		public event Action<Security> OnSecurity;
+		public event Action<MarketPrice> OnMarketPrice;
 
-        public event Action<string> OnProgress;
-        /// <summary>
-        /// InitializSession
-        /// </summary>
-        public Task Initialize(Action<string> progress, CancellationToken cancellationToken)
-        {
-            return Task.Run(() =>
+		public List<Security> Securities { get; private set; }
 
-            {
-                var settings = new SessionSettings("cts.cfg");
+		public event Action<string> OnProgress;
+		/// <summary>
+		/// InitializSession
+		/// </summary>
+		public Task Initialize(Action<string> progress, CancellationToken cancellationToken)
+		{
+			return Task.Run(() =>
 
-                IMessageStoreFactory messageFactory = new FileStoreFactory(settings);
+			{
+				var settings = new SessionSettings("cts.cfg");
 
-                ILogFactory logFactory = new FileLogFactory(settings);
+				IMessageStoreFactory messageFactory = new FileStoreFactory(settings);
+
+				ILogFactory logFactory = new FileLogFactory(settings);
 
 				initiator = new SocketInitiator(this, messageFactory, settings, logFactory);
 
-                progress("Initialization done");
+				progress("Initialization done");
 
-            }, cancellationToken);
-        }
+			}, cancellationToken);
+		}
 
-        public void Connect()
-        {
-            initiator.Start();
-        }
+		public void Connect()
+		{
+			initiator.Start();
+		}
 
-        public void Disconnect()
-        {
-            initiator.Stop();
-        }
+		public void Disconnect()
+		{
+			initiator.Stop();
+		}
 
-        public void FromAdmin(Message message, SessionID sessionID)
-        {
-            if (message is QuickFix.FIX42.Heartbeat)
-            {
-                OnProgress("Heartbeat");
-            }
-        }
+		public void FromAdmin(Message message, SessionID sessionID)
+		{
+			if (message is QuickFix.FIX42.Heartbeat)
+			{
+				OnProgress("Heartbeat");
+			}
+		}
 
-        public void FromApp(Message message, SessionID sessionID)
-        {
-            //All Incoming Applications message trigger here
-            Crack(message, sessionID);
-        }
+		public void FromApp(Message message, SessionID sessionID)
+		{
+			//All Incoming Applications message trigger here
+			Crack(message, sessionID);
+		}
 
-        public void OnCreate(SessionID sessionID)
-        {
-            OnProgress("Session created");
-        }
+		public void OnCreate(SessionID sessionID)
+		{
+			OnProgress("Session created");
+		}
 
-        //if logon is successful
-        public void OnLogon(SessionID sessionID)
-        {
-            _currentSessionId = sessionID;
-            OnProgress("Connection is successful");
-            // throw new NotImplementedException();
-        }
+		//if logon is successful
+		public void OnLogon(SessionID sessionID)
+		{
+			_currentSessionId = sessionID;
+			OnProgress("Connection is successful");
+			// throw new NotImplementedException();
+		}
 
-        //if logon is failed
-        public void OnLogout(SessionID sessionID)
-        {
-            OnProgress("Connection is loggedout");
-        }
+		//if logon is failed
+		public void OnLogout(SessionID sessionID)
+		{
+			OnProgress("Connection is loggedout");
+		}
 
-        //hook admin messages before calling server
-        public void ToAdmin(Message message, SessionID sessionID)
-        {
-            if (message is QuickFix.FIX42.Logon)
-            {
-                var logon = message as QuickFix.FIX42.Logon;
-                logon.SetField(new StringField(553, "FIXIT")); //username
-                logon.SetField(new StringField(554, "Q")); //username
+		//hook admin messages before calling server
+		public void ToAdmin(Message message, SessionID sessionID)
+		{
+			if (message is QuickFix.FIX42.Logon)
+			{
+				var logon = message as QuickFix.FIX42.Logon;
+
+				//logon.SetField(new StringField(553, "FIXIT")); //username
+				//logon.SetField(new StringField(554, "Q")); //username
 
 
-                ///   logon.SetField(new StringField(553, "FIXIT")); //username IT
-                ///    logon.SetField(new StringField(554, "Q")); //pass IT
+				///   logon.SetField(new StringField(553, "FIXIT")); //username IT
+				///    logon.SetField(new StringField(554, "Q")); //pass IT
 
-                /// logon.SetField(new StringField(553, "FIXAGUS")); //username agus
-                /// logon.SetField(new StringField(554, "QWER1234")); //pass agus
+				logon.SetField(new StringField(553, "FIXAGUS")); //username agus
+				logon.SetField(new StringField(554, "QWER1234")); //pass agus
 
-            }
-        }
+			}
+		}
 
-        public void ToApp(Message message, SessionID sessionId)
-        {
-            //  throw new NotImplementedException();
-        }
+		public void ToApp(Message message, SessionID sessionId)
+		{
+			//  throw new NotImplementedException();
+		}
 
 		//Send Security Definitions Request
 		public Task SendSecurityDefinitionRequest(Action<string> progressHandler)
@@ -117,14 +121,15 @@ namespace TradingClientApp
 			{
 				//Create object of Security Definition
 				QuickFix.FIX42.SecurityDefinitionRequest securityDefinition = new QuickFix.FIX42.SecurityDefinitionRequest();
-				securityDefinition.SecurityReqID = new SecurityReqID("1");
+				securityDefinition.SecurityReqID = new SecurityReqID(Guid.NewGuid().ToString());
+				securityDefinition.SecurityExchange = new SecurityExchange("ICDX");
 				securityDefinition.SecurityRequestType = new SecurityRequestType(SecurityListRequestType.TRADINGSESSIONID);
 				Session.SendToTarget(securityDefinition, _currentSessionId);
 				progressHandler("Sent Security Definition Request");
 			});
 		}
 
-		public Task SendMarketDataRequest(Action<string> progressHandler)
+		public Task SendMarketDataRequest(string symbol, string exchange, Action<string> progressHandler)
 		{
 			return Task.Run(() =>
 			{
@@ -152,8 +157,8 @@ namespace TradingClientApp
 				securityDefinition.NoRelatedSym = new NoRelatedSym(1);
 
 				var relatedSymbol = new QuickFix.FIX42.MarketDataRequest.NoRelatedSymGroup();
-				relatedSymbol.Set(new Symbol("IF1509"));
-				relatedSymbol.Set(new SecurityExchange("CFFEX"));
+				relatedSymbol.Set(new Symbol(symbol));
+				relatedSymbol.Set(new SecurityExchange(exchange));
 				securityDefinition.AddGroup(relatedSymbol);
 				Session.SendToTarget(securityDefinition, _currentSessionId);
 				progressHandler("Sent MarketData Request");
@@ -167,8 +172,36 @@ namespace TradingClientApp
 
 		public void OnMessage(QuickFix.FIX42.MarketDataSnapshotFullRefresh marketDataSnapshot, SessionID session)
 		{
-			Debug.WriteLine(marketDataSnapshot.ToString());
+			MarketPrice marketPrice = new MarketPrice();
+			marketPrice.Symbol = marketDataSnapshot.Symbol.getValue();
+			var nomdentries = marketDataSnapshot.NoMDEntries;
+			// message.GetGroup(1, noMdEntries);
+			var grp = new QuickFix.FIX42.MarketDataSnapshotFullRefresh.NoMDEntriesGroup();
+
+			for (int i = 1; i <= nomdentries.getValue(); i++)
+			{
+				grp = (QuickFix.FIX42.MarketDataSnapshotFullRefresh.NoMDEntriesGroup)marketDataSnapshot.GetGroup(i, grp);
+
+			//	var grp = marketDataSnapshot.GetGroup(i, new QuickFix.FIX42.MarketDataSnapshotFullRefresh.NoMDEntriesGroup()) as QuickFix.FIX42.MarketDataSnapshotFullRefresh.NoMDEntriesGroup;
+				MDEntryType priceType = grp.Get(new MDEntryType());
+				MDEntryPx mdEntryPx = grp.Get(new MDEntryPx());
+				if (priceType.getValue() == MDEntryType.BID)
+					marketPrice.Bid = mdEntryPx.getValue();
+				else if (priceType.getValue() == MDEntryType.OFFER)
+					marketPrice.Offer = mdEntryPx.getValue();
+				else if (priceType.getValue() == MDEntryType.TRADE)
+					marketPrice.TradedPrice = mdEntryPx.getValue();
+				else if (priceType.getValue() == MDEntryType.TRADING_SESSION_LOW_PRICE)
+					marketPrice.LowPx = mdEntryPx.getValue();
+				else if (priceType.getValue() == MDEntryType.TRADING_SESSION_HIGH_PRICE)
+					marketPrice.HighPx = mdEntryPx.getValue();
+			}
+
+			if (OnMarketPrice != null)
+				OnMarketPrice(marketPrice);
 		}
+
+
 		public void OnMessage(QuickFix.FIX42.MarketDataIncrementalRefresh marketDataSnapshot, SessionID session)
 		{
 
@@ -180,11 +213,26 @@ namespace TradingClientApp
 			Securities = new List<Security>();
 			//Number of securities in one message
 			int numOfSecurities = securityDefinition.TotalNumSecurities.getValue();
+			var relatedsymbol = securityDefinition.SecurityID.getValue();
+
 			var group = new QuickFix.FIX42.SecurityDefinition();
+			if (Securities == null)
+				Securities = new List<Security>();
 
+			var sec = new Security
+			{
+				Symbol = securityDefinition.Symbol.getValue(),
+				ContractMultiplier = securityDefinition.ContractMultiplier.getValue(),
+				Currency = securityDefinition.Currency.getValue(),
+				Exchange = securityDefinition.SecurityExchange.getValue(),
+				MaturityDay = securityDefinition.MaturityDay.getValue(),
+				MaturityMonthYear = securityDefinition.MaturityMonthYear.getValue()
+			};
 
+			Securities.Add(sec);
+
+			if (OnSecurity != null)
+				OnSecurity(sec);
 		}
-
-
 	}
 }
