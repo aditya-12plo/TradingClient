@@ -40,7 +40,6 @@
 			this.label1 = new System.Windows.Forms.Label();
 			this.label2 = new System.Windows.Forms.Label();
 			this.dgMarketPrice = new System.Windows.Forms.DataGridView();
-			this.marketPriceBindingSource = new System.Windows.Forms.BindingSource(this.components);
 			this.securityIdDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
 			this.exchangeDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
 			this.symbolDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -52,6 +51,7 @@
 			this.highPxDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
 			this.lowPxDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
 			this.closePxDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+			this.marketPriceBindingSource = new System.Windows.Forms.BindingSource(this.components);
 			((System.ComponentModel.ISupportInitialize)(this.dgMarketPrice)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.marketPriceBindingSource)).BeginInit();
 			this.SuspendLayout();
@@ -101,6 +101,8 @@
 			this.listBox.Name = "listBox";
 			this.listBox.Size = new System.Drawing.Size(249, 381);
 			this.listBox.TabIndex = 4;
+			this.listBox.SelectedIndexChanged += new System.EventHandler(this.listBox_SelectedIndexChanged);
+			this.listBox.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.listBox_MouseDoubleClick);
 			// 
 			// button4
 			// 
@@ -169,10 +171,6 @@
 			this.dgMarketPrice.ReadOnly = true;
 			this.dgMarketPrice.Size = new System.Drawing.Size(484, 318);
 			this.dgMarketPrice.TabIndex = 10;
-			// 
-			// marketPriceBindingSource
-			// 
-			this.marketPriceBindingSource.DataSource = typeof(TradingClientApp.Model.MarketPrice);
 			// 
 			// securityIdDataGridViewTextBoxColumn
 			// 
@@ -250,6 +248,10 @@
 			this.closePxDataGridViewTextBoxColumn.HeaderText = "ClosePx";
 			this.closePxDataGridViewTextBoxColumn.Name = "closePxDataGridViewTextBoxColumn";
 			this.closePxDataGridViewTextBoxColumn.ReadOnly = true;
+			// 
+			// marketPriceBindingSource
+			// 
+			this.marketPriceBindingSource.DataSource = typeof(TradingClientApp.Model.MarketPrice);
 			// 
 			// Form1
 			// 

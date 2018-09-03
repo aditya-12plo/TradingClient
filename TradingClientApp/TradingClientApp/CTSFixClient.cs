@@ -138,7 +138,9 @@ namespace TradingClientApp
 				{
 					MDReqID = new MDReqID(Guid.NewGuid().ToString()),
 					SubscriptionRequestType = new SubscriptionRequestType(SubscriptionRequestType.SNAPSHOT_PLUS_UPDATES),
-					MarketDepth = new MarketDepth(1)
+					MarketDepth = new MarketDepth(1),
+					MDUpdateType = new MDUpdateType(0)
+
 				};
 
 				var noMDEntryTypes = new QuickFix.FIX42.MarketDataRequest.NoMDEntryTypesGroup();

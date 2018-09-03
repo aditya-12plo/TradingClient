@@ -108,5 +108,15 @@ namespace TradingClientApp
 		{
 			_ctsFixClient.SendMarketDataRequest(txtSymbol.Text, txtExchange.Text, ShowProgress);
 		}
+
+		private void listBox_MouseDoubleClick(object sender, MouseEventArgs e)
+		{
+			
+		}
+
+		private void listBox_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			txtSymbol.Text = listBox.SelectedItem.ToString();
+		}
 	}
 }
