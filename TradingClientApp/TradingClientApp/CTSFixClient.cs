@@ -60,7 +60,7 @@ namespace TradingClientApp
 		{
 			if (message is QuickFix.FIX42.Heartbeat)
 			{
-				OnProgress("Heartbeat");
+				OnProgress("Heartbeat : " + message);
 			}
 		}
 
@@ -72,21 +72,21 @@ namespace TradingClientApp
 
 		public void OnCreate(SessionID sessionID)
 		{
-			OnProgress("Session created");
+			OnProgress("Session created : " + sessionID);
 		}
 
 		//if logon is successful
 		public void OnLogon(SessionID sessionID)
 		{
 			_currentSessionId = sessionID;
-			OnProgress("Connection is successful");
+			OnProgress("Connection is successful : " + sessionID);
 			// throw new NotImplementedException();
 		}
 
 		//if logon is failed
 		public void OnLogout(SessionID sessionID)
 		{
-			OnProgress("Connection is loggedout");
+			OnProgress("Connection is loggedout : " + sessionID);
 		}
 
 		//hook admin messages before calling server
@@ -96,15 +96,15 @@ namespace TradingClientApp
 			{
 				var logon = message as QuickFix.FIX42.Logon;
 
-				//logon.SetField(new StringField(553, "FIXIT")); //username
-				//logon.SetField(new StringField(554, "Q")); //username
+				//logon.SetField(new StringField(553, "FIXAGUS")); //username
+				//logon.SetField(new StringField(554, "QWER1234")); //username
 
 
 				///   logon.SetField(new StringField(553, "FIXIT")); //username IT
 				///    logon.SetField(new StringField(554, "Q")); //pass IT
 
-				logon.SetField(new StringField(553, "FIXAGUS")); //username agus
-				logon.SetField(new StringField(554, "QWER1234")); //pass agus
+				logon.SetField(new StringField(553, "FIXIT")); //username agus
+				logon.SetField(new StringField(554, "Q")); //pass agus
 
 			}
 		}

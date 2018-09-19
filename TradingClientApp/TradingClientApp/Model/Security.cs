@@ -29,6 +29,8 @@ namespace TradingClientApp.Model
 		public decimal ContractMultiplier { get; set; }
 		public string Currency { get; set; }
 
+
+
 		private string _symbol;
 		public string Symbol {
 			get
@@ -40,6 +42,25 @@ namespace TradingClientApp.Model
 				if (value != this._symbol)
 				{
 					this._symbol = value;
+					NotifyPropertyChanged();
+				}
+			}
+		}
+
+
+
+		private decimal _spread;
+		public decimal Spread
+		{
+			get
+			{
+				return (this._bid - this._offer);
+			}
+			set
+			{
+				if (value != (this._bid - this._offer))
+				{
+					this._spread = value;
 					NotifyPropertyChanged();
 				}
 			}

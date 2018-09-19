@@ -60,13 +60,14 @@ namespace TradingClientApp
 			}
 			else
 			{
+				marketprice.Spread = msg.Spread;
 				marketprice.Offer = msg.Offer;
 				marketprice.Bid = msg.Bid;
 				marketprice.ClosePx = msg.ClosePx;
 				marketprice.HighPx = msg.HighPx;
 				marketprice.LowPx = msg.LowPx;
 				marketprice.TradedPrice = msg.TradedPrice;
-			}
+			} 
 		}
 
 		private void _ctsFixClient_OnSecurity(Model.Security msg)
@@ -117,6 +118,16 @@ namespace TradingClientApp
 		private void listBox_SelectedIndexChanged(object sender, EventArgs e)
 		{
 			txtSymbol.Text = listBox.SelectedItem.ToString();
+		}
+
+		private void Form1_Load(object sender, EventArgs e)
+		{
+
+		}
+
+		private void dgMarketPrice_CellContentClick(object sender, DataGridViewCellEventArgs e)
+		{
+
 		}
 	}
 }
